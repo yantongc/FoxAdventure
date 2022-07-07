@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    private enum PLAYER_STATE { Stand, Jump };
+    private enum PLAYER_STATE { Stand, Jump, Hurt };
 
     private Rigidbody2D rd;
 
@@ -58,6 +58,16 @@ public class PlayerController : MonoBehaviour
 
     void PlayerMove()
     {
+        if (animator.GetBool("IsHurt"))
+        {
+            if (Mathf.Abs(rd.velocity.x) < 0.1f)
+            {
+                Debug.Log(rd.velocity.x);
+                animator.SetBool("IsHurt", false);
+                playerState = PLAYER_STATE.Stand;
+            }
+            return;
+        }
         float horizontal = Input.GetAxisRaw("Horizontal");
         rd.velocity = new Vector2(horizontal * speed * Time.deltaTime, rd.velocity.y);
         if (horizontal != 0)
@@ -134,7 +144,28 @@ public class PlayerController : MonoBehaviour
                 GameManager.Instance.CurGemNum++;
             }
             Destroy(collision.gameObject);
+        }
+    }
 
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Enemy"))
+        {
+            if (playerState == PLAYER_STATE.Jump && animator.GetBool("IsDrowing"))
+            {
+                Destroy(collision.gameObject);
+                HandleJump();
+            }
+            else if (transform.position.x < collision.gameObject.transform.position.x)
+            {
+                rd.velocity = new Vector2(-5, rd.velocity.y);
+                animator.SetBool("IsHurt", true);
+            }
+            else if (transform.position.x > collision.gameObject.transform.position.x)
+            {
+                rd.velocity = new Vector2(5, rd.velocity.y);
+                animator.SetBool("IsHurt", true);
+            }
         }
     }
 }
